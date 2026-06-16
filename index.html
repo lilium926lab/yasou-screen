@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>夜想スクリーン — あの人からの通知・トーク・着信メーカー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;600;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+<style>
+  :root{
+    --ink:#0E0B10; --panel:#161219; --panel2:#1e1824; --line:rgba(201,162,75,.16);
+    --garnet:#A8324A; --gold:#C9A24B; --bone:#E8E2DA; --muted:#948a82;
+    --sys:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;
+    --min:"Zen Old Mincho",serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 700px at 80% -10%, #1a1018 0%, transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, #140a12 0%, transparent 55%),
+      var(--ink);
+    color:var(--bone); font-family:var(--sys); min-height:100vh; line-height:1.6;
+  }
+  .topbar{padding:28px 24px 8px; max-width:1140px; margin:0 auto}
+  .brand{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
+  .wordmark{font-family:var(--min); font-weight:900; font-size:30px; letter-spacing:.18em; color:var(--bone)}
+  .wordmark b{color:var(--garnet)}
+  .tag{font-size:12.5px; color:var(--muted); letter-spacing:.04em}
+  .hair{height:1px; background:linear-gradient(90deg,transparent,var(--line) 12%,var(--line) 88%,transparent); margin:14px 0 0}
+
+  .wrap{max-width:1140px; margin:0 auto; padding:22px 24px 60px;
+    display:grid; grid-template-columns:1fr 384px; gap:34px; align-items:start}
+  @media(max-width:880px){ .wrap{grid-template-columns:1fr; gap:26px}
+    .stage{order:-1; position:static !important} }
+
+  /* ---- controls ---- */
+  .panel{background:linear-gradient(180deg,var(--panel),#13101a); border:1px solid var(--line);
+    border-radius:16px; padding:20px 20px 8px; box-shadow:0 18px 50px -30px #000}
+  .eyebrow{font-family:var(--min); font-size:12px; letter-spacing:.3em; color:var(--gold);
+    text-transform:uppercase; margin:6px 0 12px; display:flex; align-items:center; gap:10px}
+  .eyebrow::after{content:""; flex:1; height:1px; background:var(--line)}
+  .grp{margin-bottom:20px}
+  label.fl{display:block; font-size:12px; color:var(--muted); margin:0 0 5px; letter-spacing:.03em}
+  input[type=text], textarea, select{
+    width:100%; background:#0c0910; color:var(--bone); border:1px solid #2a2230; border-radius:9px;
+    padding:9px 11px; font-family:var(--sys); font-size:14px; outline:none; transition:border-color .15s}
+  textarea{resize:vertical; min-height:42px; line-height:1.5}
+  input:focus, textarea:focus, select:focus{border-color:var(--gold)}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .row-time{display:grid; grid-template-columns:1fr 1.4fr; gap:10px}
+
+  .tabs{display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-bottom:6px}
+  .tab{appearance:none; background:#0c0910; border:1px solid #2a2230; color:var(--muted);
+    border-radius:10px; padding:11px 6px; font-family:var(--min); font-size:14px; letter-spacing:.08em;
+    cursor:pointer; transition:.18s}
+  .tab:hover{color:var(--bone); border-color:#3a3040}
+  .tab.on{background:linear-gradient(180deg,#241019,#1a0d14); color:var(--bone);
+    border-color:var(--garnet); box-shadow:inset 0 0 0 1px rgba(168,50,74,.4)}
+
+  .themes{display:flex; gap:9px; flex-wrap:wrap}
+  .sw{width:30px; height:30px; border-radius:50%; cursor:pointer; border:2px solid transparent;
+    box-shadow:0 0 0 1px #000 inset; position:relative; transition:transform .12s}
+  .sw:hover{transform:scale(1.08)}
+  .sw.on{border-color:var(--gold)}
+  .sw[data-t=noir]{background:radial-gradient(#2a2a30,#0a0a0c)}
+  .sw[data-t=garnet]{background:radial-gradient(#b23a4b,#3a0c14)}
+  .sw[data-t=violet]{background:radial-gradient(#8a6cb0,#1a1030)}
+  .sw[data-t=rose]{background:radial-gradient(#c77e96,#3a0e1e)}
+  .sw[data-t=mono]{background:radial-gradient(#9a9a9a,#101010)}
+
+  .upload{display:flex; gap:10px; align-items:center}
+  .upbtn{flex:1; text-align:center; background:#0c0910; border:1px dashed #3a3040; color:var(--muted);
+    border-radius:9px; padding:10px; cursor:pointer; font-size:13px; transition:.15s}
+  .upbtn:hover{border-color:var(--gold); color:var(--bone)}
+  .clearx{background:none;border:1px solid #2a2230;color:var(--muted);border-radius:8px;padding:9px 11px;cursor:pointer;font-size:12px}
+  .clearx:hover{color:var(--garnet);border-color:var(--garnet)}
+
+  /* message / note editor */
+  .item{background:#0c0910; border:1px solid #241e2a; border-radius:11px; padding:11px; margin-bottom:9px}
+  .item-head{display:flex; gap:8px; align-items:center; margin-bottom:8px}
+  .who{flex:0 0 auto}
+  .who select{width:auto; padding:6px 8px; font-size:12.5px}
+  .del{margin-left:auto; background:none; border:none; color:#5a4a52; cursor:pointer; font-size:18px; line-height:1; padding:0 4px}
+  .del:hover{color:var(--garnet)}
+  .addbtn{width:100%; background:linear-gradient(180deg,#1a141f,#141019); border:1px solid var(--line);
+    color:var(--gold); border-radius:10px; padding:11px; cursor:pointer; font-family:var(--min);
+    letter-spacing:.1em; font-size:13.5px; transition:.15s}
+  .addbtn:hover{border-color:var(--gold); background:#1d1622}
+  .toggles{display:flex; gap:18px; margin-top:4px; flex-wrap:wrap}
+  .tg{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--muted); cursor:pointer; user-select:none}
+  .tg input{accent-color:var(--garnet); width:15px; height:15px}
+
+  .export{display:flex; gap:11px; margin-top:6px}
+  .save{flex:1; background:linear-gradient(180deg,var(--garnet),#7e1f30); color:#fff; border:none;
+    border-radius:11px; padding:14px; font-family:var(--min); font-size:15px; letter-spacing:.14em;
+    cursor:pointer; box-shadow:0 12px 30px -14px var(--garnet); transition:.15s}
+  .save:hover{filter:brightness(1.08)} .save:active{transform:translateY(1px)}
+  .save.gif{background:linear-gradient(180deg,#1d1622,#140f1a); color:var(--gold); box-shadow:none; border:1px solid var(--gold)}
+  .save.gif:hover{background:#241a2c; filter:none}
+  .save.vid{background:linear-gradient(180deg,#141826,#0f1019); color:#aeb6e6; box-shadow:none; border:1px solid #5b66a0}
+  .save.vid:hover{background:#1a2032; filter:none}
+  .prog{font-size:12px; color:var(--gold); text-align:center; margin-top:11px; min-height:16px; letter-spacing:.04em}
+  .gif-cap *{animation:none !important; transition:none !important}
+  .note{font-size:11.5px; color:#5e5560; margin-top:14px; text-align:center; line-height:1.7}
+
+  /* ---- phone stage ---- */
+  .stage{position:sticky; top:22px}
+  .phone-shell{display:flex; justify-content:center}
+  .phone{
+    width:340px; height:724px; border-radius:46px; padding:11px;
+    background:linear-gradient(150deg,#2a2630,#0a080c 60%); position:relative;
+    box-shadow:0 0 0 2px #000, 0 30px 80px -30px #000, inset 0 0 0 1px rgba(255,255,255,.04);
+  }
+  .screen{width:100%; height:100%; border-radius:36px; overflow:hidden; position:relative;
+    background:#0a0a0c; font-family:var(--sys)}
+  .notch{position:absolute; top:0; left:50%; transform:translateX(-50%); width:120px; height:26px;
+    background:#000; border-bottom-left-radius:16px; border-bottom-right-radius:16px; z-index:40}
+
+  .statusbar{position:absolute; top:0; left:0; right:0; height:44px; display:flex; align-items:center;
+    justify-content:space-between; padding:0 22px; z-index:30; color:#fff; font-size:14px; font-weight:600}
+  .sb-r{display:flex; align-items:center; gap:6px}
+  .sig{display:flex; align-items:flex-end; gap:1.5px; height:11px}
+  .sig i{width:3px; background:#fff; border-radius:1px}
+  .sig i:nth-child(1){height:4px}.sig i:nth-child(2){height:6px}.sig i:nth-child(3){height:8px}.sig i:nth-child(4){height:11px}
+  .bat{width:23px; height:11px; border:1px solid rgba(255,255,255,.85); border-radius:3px; position:relative; padding:1.5px}
+  .bat::after{content:""; position:absolute; right:-3px; top:3px; width:2px; height:5px; background:rgba(255,255,255,.85); border-radius:0 1px 1px 0}
+  .bat i{display:block; height:100%; width:82%; background:#fff; border-radius:1px}
+
+  /* theme vars on screen */
+  .screen[data-t=noir]{--ac:#c9a24b; --me:#26262c; --them:#17171b; --wall:linear-gradient(160deg,#16161c,#070708)}
+  .screen[data-t=garnet]{--ac:#c64a5c; --me:#6e1622; --them:#1c0e12; --wall:linear-gradient(160deg,#1a0a0f,#080306)}
+  .screen[data-t=violet]{--ac:#9b7ec4; --me:#3a2456; --them:#160f20; --wall:linear-gradient(160deg,#140d1e,#070510)}
+  .screen[data-t=rose]{--ac:#d089a0; --me:#6e2a44; --them:#1c0f15; --wall:linear-gradient(160deg,#1a0c12,#0a0408)}
+  .screen[data-t=mono]{--ac:#b8b8b8; --me:#2c2c2c; --them:#161616; --wall:linear-gradient(160deg,#141414,#050505)}
+
+  /* ===== LOCK ===== */
+  .lock{position:absolute; inset:0; background:var(--wall); background-size:cover; background-position:center;
+    display:flex; flex-direction:column; align-items:center; padding-top:88px}
+  .lock::before{content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.25),rgba(0,0,0,.55))}
+  .lock-time{position:relative; color:#fff; font-size:74px; font-weight:300; letter-spacing:.01em; line-height:1; text-shadow:0 2px 20px rgba(0,0,0,.4)}
+  .lock-date{position:relative; color:rgba(255,255,255,.92); font-size:16px; margin-top:8px; letter-spacing:.02em}
+  .notes{position:relative; width:88%; margin-top:38px; display:flex; flex-direction:column; gap:10px}
+  .ncard{background:rgba(28,26,32,.82); border-radius:18px; padding:13px 14px; display:flex; gap:11px;
+    box-shadow:0 6px 24px -12px #000}
+  .nicon{width:40px; height:40px; border-radius:11px; flex:0 0 auto; background:linear-gradient(140deg,var(--ac),#000);
+    display:flex; align-items:center; justify-content:center; color:#fff; font-family:var(--min); font-weight:600; font-size:18px}
+  .nbody{flex:1; min-width:0; color:#fff}
+  .nrow1{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+  .napp{font-size:11px; color:rgba(255,255,255,.62); letter-spacing:.04em; text-transform:none}
+  .ntime{font-size:11px; color:rgba(255,255,255,.55); flex:0 0 auto}
+  .ntitle{font-size:14px; font-weight:600; margin:1px 0}
+  .ntext{font-size:13.5px; color:rgba(255,255,255,.86); word-break:break-word}
+
+  /* ===== CHAT ===== */
+  .chat{position:absolute; inset:0; background:var(--them); display:flex; flex-direction:column}
+  .chat-hd{padding:52px 16px 11px; display:flex; align-items:center; gap:11px;
+    background:rgba(10,10,12,.6); border-bottom:1px solid rgba(255,255,255,.06)}
+  .back{color:var(--ac); font-size:22px; line-height:1; margin-right:-2px}
+  .av{width:38px; height:38px; border-radius:50%; flex:0 0 auto; background:linear-gradient(140deg,var(--ac),#1a1a1a);
+    background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-family:var(--min); font-size:16px}
+  .chat-name{font-size:16px; font-weight:600; color:#fff}
+  .chat-sub{font-size:11px; color:rgba(255,255,255,.45)}
+  .msgs{flex:1; overflow:hidden; padding:14px 14px 18px; display:flex; flex-direction:column; gap:3px}
+  .daydiv{align-self:center; font-size:11px; color:rgba(255,255,255,.4); background:rgba(255,255,255,.06);
+    padding:3px 12px; border-radius:20px; margin:6px 0 10px}
+  .mwrap{display:flex; flex-direction:column; max-width:74%; margin-top:7px}
+  .mwrap.them{align-self:flex-start; align-items:flex-start}
+  .mwrap.me{align-self:flex-end; align-items:flex-end}
+  .bub{padding:9px 13px; font-size:14.5px; line-height:1.5; color:#fff; border-radius:18px; word-break:break-word}
+  .them .bub{background:var(--them); border:1px solid rgba(255,255,255,.1); border-bottom-left-radius:5px; background:#2a2a30}
+  .me .bub{background:var(--me); border-bottom-right-radius:5px}
+  .meta{font-size:10px; color:rgba(255,255,255,.4); margin:3px 4px 0}
+  .me .meta{text-align:right}
+  .typing{align-self:flex-start; background:#2a2a30; border-radius:18px; border-bottom-left-radius:5px;
+    padding:12px 15px; display:flex; gap:4px; margin-top:7px}
+  .typing i{width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.6); animation:bln 1.2s infinite}
+  .typing i:nth-child(2){animation-delay:.2s} .typing i:nth-child(3){animation-delay:.4s}
+  @keyframes bln{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+  .inputbar{padding:9px 14px 16px; display:flex; align-items:center; gap:9px; background:rgba(10,10,12,.55)}
+  .ibox{flex:1; height:34px; border-radius:18px; background:#1d1d22; border:1px solid rgba(255,255,255,.08)}
+  .isend{width:32px;height:32px;border-radius:50%;background:var(--me);flex:0 0 auto}
+
+  /* ===== CALL ===== */
+  .call{position:absolute; inset:0; background:var(--wall); background-size:cover; background-position:center;
+    display:flex; flex-direction:column; align-items:center; padding-top:120px}
+  .call::before{content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.4),rgba(0,0,0,.7))}
+  .glow{position:absolute; top:130px; left:50%; transform:translateX(-50%); width:300px; height:300px;
+    border-radius:50%; background:radial-gradient(circle,var(--ac) 0%,transparent 62%); opacity:.22; animation:pulse 2.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.14;transform:translateX(-50%) scale(.92)}50%{opacity:.3;transform:translateX(-50%) scale(1.06)}}
+  .call-av{position:relative; width:128px; height:128px; border-radius:50%; background:linear-gradient(140deg,var(--ac),#1a1a1a);
+    background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-family:var(--min); font-size:46px; box-shadow:0 0 50px -10px var(--ac)}
+  .call-name{position:relative; color:#fff; font-size:30px; font-weight:600; margin-top:26px; letter-spacing:.03em}
+  .call-status{position:relative; color:rgba(255,255,255,.72); font-size:15px; margin-top:9px; letter-spacing:.16em}
+  .call-actions{position:absolute; bottom:64px; left:0; right:0; display:flex; justify-content:space-around; padding:0 44px}
+  .cbtn{display:flex; flex-direction:column; align-items:center; gap:9px}
+  .cdot{width:68px; height:68px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px; color:#fff}
+  .cdot.dec{background:#e5484d; transform:rotate(135deg)}
+  .cdot.acc{background:#2bbd5b}
+  .clab{font-size:12px; color:rgba(255,255,255,.7)}
+
+  .empty{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#444; font-size:13px}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="wordmark">夜想<b>スクリーン</b></div>
+      <div class="tag">あの人からの通知・トーク・着信を、一枚に。</div>
+    </div>
+    <div class="hair"></div>
+  </div>
+
+  <div class="wrap">
+    <!-- CONTROLS -->
+    <div class="panel">
+      <div class="tabs">
+        <button class="tab on" data-mode="lock">ロック画面</button>
+        <button class="tab" data-mode="chat">トーク</button>
+        <button class="tab" data-mode="call">着信</button>
+      </div>
+
+      <div class="grp" style="margin-top:18px">
+        <div class="eyebrow">基本</div>
+        <label class="fl">あの人の名前</label>
+        <input type="text" id="f-name" value="御影 尊" />
+        <div class="row-time" style="margin-top:12px">
+          <div><label class="fl">時刻</label><input type="text" id="f-time" value="2:47" /></div>
+          <div><label class="fl">日付（ロック画面）</label><input type="text" id="f-date" value="6月16日 火曜日" /></div>
+        </div>
+      </div>
+
+      <div class="grp">
+        <div class="eyebrow">テーマ</div>
+        <div class="themes" id="themes">
+          <div class="sw on" data-t="noir" title="ノワール／墨"></div>
+          <div class="sw" data-t="garnet" title="深紅"></div>
+          <div class="sw" data-t="violet" title="紫煙"></div>
+          <div class="sw" data-t="rose" title="退廃ローズ"></div>
+          <div class="sw" data-t="mono" title="鈍色"></div>
+        </div>
+      </div>
+
+      <div class="grp">
+        <div class="eyebrow">画像</div>
+        <label class="fl">アイコン（トーク・着信に使用 / 任意）</label>
+        <div class="upload">
+          <label class="upbtn">アイコンを選ぶ<input type="file" id="f-avatar" accept="image/*" hidden></label>
+          <button class="clearx" id="clr-avatar">消す</button>
+        </div>
+        <label class="fl" style="margin-top:12px">壁紙（ロック・着信の背景 / 任意）</label>
+        <div class="upload">
+          <label class="upbtn">壁紙を選ぶ<input type="file" id="f-wall" accept="image/*" hidden></label>
+          <button class="clearx" id="clr-wall">消す</button>
+        </div>
+      </div>
+
+      <!-- LOCK editor -->
+      <div class="grp mode-lock">
+        <div class="eyebrow">通知</div>
+        <div id="lock-list"></div>
+        <button class="addbtn" id="add-note">＋ 通知を追加</button>
+      </div>
+
+      <!-- CHAT editor -->
+      <div class="grp mode-chat" style="display:none">
+        <div class="eyebrow">メッセージ</div>
+        <div id="chat-list"></div>
+        <button class="addbtn" id="add-msg">＋ メッセージを追加</button>
+        <div class="toggles" style="margin-top:12px">
+          <label class="tg"><input type="checkbox" id="t-read" checked>最後に「既読」を付ける</label>
+          <label class="tg"><input type="checkbox" id="t-typing">「入力中…」を表示</label>
+        </div>
+      </div>
+
+      <!-- CALL editor -->
+      <div class="grp mode-call" style="display:none">
+        <div class="eyebrow">通話</div>
+        <div class="row2">
+          <div><label class="fl">状態</label>
+            <select id="f-callstatus">
+              <option>着信中…</option><option>通話中</option><option>応答なし</option><option>不在着信</option>
+            </select>
+          </div>
+          <div><label class="fl">通話時間（任意）</label><input type="text" id="f-duration" placeholder="00:42"></div>
+        </div>
+      </div>
+
+      <div class="grp" style="margin-bottom:14px">
+        <div class="eyebrow">GIFのテンポ</div>
+        <select id="f-tempo">
+          <option value="slow">焦らす（ゆっくり）</option>
+          <option value="normal" selected>標準</option>
+          <option value="fast">連投（速い）</option>
+        </select>
+      </div>
+      <div class="export">
+        <button class="save" id="save">PNGで保存</button>
+      </div>
+      <div class="export" style="margin-top:10px">
+        <button class="save gif" id="savegif">GIFで保存</button>
+        <button class="save vid" id="savevid">WebMで保存</button>
+      </div>
+      <div class="prog" id="prog"></div>
+      <div class="note">画像はすべてブラウザ内で処理され、サーバーには送信されません。<br>PNG・GIF・WebMをそのままSNSに貼れます。</div>
+    </div>
+
+    <!-- STAGE -->
+    <div class="stage">
+      <div class="phone-shell">
+        <div class="phone">
+          <div class="screen" id="screen" data-t="noir">
+            <div class="notch"></div>
+            <div class="statusbar">
+              <span id="sb-time">2:47</span>
+              <span class="sb-r">
+                <span class="sig"><i></i><i></i><i></i><i></i></span>
+                <span class="bat"><i></i></span>
+              </span>
+            </div>
+            <div id="canvas-area"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const S = {
+  mode:'lock', theme:'noir', name:'御影 尊', time:'2:47', date:'6月16日 火曜日',
+  avatar:null, wall:null,
+  notes:[
+    {app:'メッセージ', text:'迎えに行くから、そこ動かないで', time:'たった今'},
+    {app:'メッセージ', text:'まだ起きてるよね。電気、ついてる', time:'2分前'},
+    {app:'電話', text:'不在着信 3件', time:'2:31'}
+  ],
+  msgs:[
+    {who:'them', text:'まだ起きてる?'},
+    {who:'them', text:'電気ついてるの、見えてるよ'},
+    {who:'me',   text:'…みてたの?'},
+    {who:'them', text:'ずっと見てる。当たり前でしょ'}
+  ],
+  read:true, typing:false,
+  callStatus:'着信中…', duration:''
+};
+
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const initial=n=>{const c=(n||'').trim()[0]; return c||'•';};
+
+/* ---------- render preview ---------- */
+function render(){
+  const scr=$('#screen'); scr.dataset.t=S.theme;
+  $('#sb-time').textContent=S.time||' ';
+  const area=$('#canvas-area');
+  if(S.mode==='lock') area.innerHTML=renderLock();
+  else if(S.mode==='chat') area.innerHTML=renderChat();
+  else area.innerHTML=renderCall();
+}
+function avStyle(){ return S.avatar? `background-image:url(${S.avatar})` : ''; }
+function wallStyle(){ return S.wall? `background-image:url(${S.wall})` : ''; }
+
+function renderLock(){
+  const cards=S.notes.map(n=>`
+    <div class="ncard">
+      <div class="nicon">${esc(initial(n.app))}</div>
+      <div class="nbody">
+        <div class="nrow1"><span class="napp">${esc(n.app||'通知')}</span><span class="ntime">${esc(n.time||'')}</span></div>
+        <div class="ntitle">${esc(S.name)}</div>
+        <div class="ntext">${esc(n.text)}</div>
+      </div>
+    </div>`).join('');
+  return `<div class="lock" style="${wallStyle()}">
+    <div class="lock-time">${esc(S.time)}</div>
+    <div class="lock-date">${esc(S.date)}</div>
+    <div class="notes">${cards}</div>
+  </div>`;
+}
+
+function renderChat(){
+  let rows='<div class="daydiv">今日</div>';
+  let lastMe=-1; S.msgs.forEach((m,i)=>{ if(m.who==='me') lastMe=i; });
+  S.msgs.forEach((m,i)=>{
+    const showRead = S.read && m.who==='me' && i===lastMe;
+    rows+=`<div class="mwrap ${m.who}">
+      <div class="bub">${esc(m.text)}</div>
+      ${showRead?'<div class="meta readmark">既読 '+esc(S.time)+'</div>':''}
+    </div>`;
+  });
+  if(S.typing) rows+=`<div class="typing"><i></i><i></i><i></i></div>`;
+  return `<div class="chat">
+    <div class="chat-hd">
+      <span class="back">‹</span>
+      <div class="av" style="${avStyle()}">${S.avatar?'':esc(initial(S.name))}</div>
+      <div><div class="chat-name">${esc(S.name)}</div><div class="chat-sub">オンライン</div></div>
+    </div>
+    <div class="msgs">${rows}</div>
+    <div class="inputbar"><div class="ibox"></div><div class="isend"></div></div>
+  </div>`;
+}
+
+function renderCall(){
+  const dur = S.duration? `<div class="call-status">${esc(S.duration)}</div>`:'';
+  return `<div class="call" style="${wallStyle()}">
+    <div class="glow"></div>
+    <div class="call-av" style="${avStyle()}">${S.avatar?'':esc(initial(S.name))}</div>
+    <div class="call-name">${esc(S.name)}</div>
+    <div class="call-status">${esc(S.callStatus)}</div>
+    ${dur}
+    <div class="call-actions">
+      <div class="cbtn"><div class="cdot dec">↗</div><div class="clab">拒否</div></div>
+      <div class="cbtn"><div class="cdot acc">↗</div><div class="clab">応答</div></div>
+    </div>
+  </div>`;
+}
+
+/* ---------- editors ---------- */
+function renderLockEditor(){
+  $('#lock-list').innerHTML=S.notes.map((n,i)=>`
+    <div class="item" data-i="${i}">
+      <div class="item-head"><span style="font-size:12px;color:var(--muted)">通知 ${i+1}</span>
+        <button class="del" data-del-note="${i}">×</button></div>
+      <div class="row2" style="margin-bottom:8px">
+        <input type="text" data-note="app" data-i="${i}" value="${escAttr(n.app)}" placeholder="アプリ名（メッセージ等）">
+        <input type="text" data-note="time" data-i="${i}" value="${escAttr(n.time)}" placeholder="たった今">
+      </div>
+      <textarea data-note="text" data-i="${i}" placeholder="通知の本文">${esc(n.text)}</textarea>
+    </div>`).join('');
+}
+function renderChatEditor(){
+  $('#chat-list').innerHTML=S.msgs.map((m,i)=>`
+    <div class="item" data-i="${i}">
+      <div class="item-head">
+        <span class="who"><select data-msg="who" data-i="${i}">
+          <option value="them" ${m.who==='them'?'selected':''}>あの人</option>
+          <option value="me" ${m.who==='me'?'selected':''}>自分</option>
+        </select></span>
+        <button class="del" data-del-msg="${i}">×</button>
+      </div>
+      <textarea data-msg="text" data-i="${i}" placeholder="セリフ">${esc(m.text)}</textarea>
+    </div>`).join('');
+}
+function escAttr(t){return (t||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+
+/* ---------- events ---------- */
+$$('.tab').forEach(t=>t.addEventListener('click',()=>{
+  $$('.tab').forEach(x=>x.classList.remove('on')); t.classList.add('on');
+  S.mode=t.dataset.mode;
+  $('.mode-lock').style.display = S.mode==='lock'?'':'none';
+  $('.mode-chat').style.display = S.mode==='chat'?'':'none';
+  $('.mode-call').style.display = S.mode==='call'?'':'none';
+  render();
+}));
+$$('.sw').forEach(sw=>sw.addEventListener('click',()=>{
+  $$('.sw').forEach(x=>x.classList.remove('on')); sw.classList.add('on');
+  S.theme=sw.dataset.t; render();
+}));
+$('#f-name').addEventListener('input',e=>{S.name=e.target.value; render();});
+$('#f-time').addEventListener('input',e=>{S.time=e.target.value; render();});
+$('#f-date').addEventListener('input',e=>{S.date=e.target.value; render();});
+$('#f-callstatus').addEventListener('change',e=>{S.callStatus=e.target.value; render();});
+$('#f-duration').addEventListener('input',e=>{S.duration=e.target.value; render();});
+$('#t-read').addEventListener('change',e=>{S.read=e.target.checked; render();});
+$('#t-typing').addEventListener('change',e=>{S.typing=e.target.checked; render();});
+
+function readImg(file,cb){const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(file);}
+$('#f-avatar').addEventListener('change',e=>{if(e.target.files[0])readImg(e.target.files[0],d=>{S.avatar=d;render();});});
+$('#f-wall').addEventListener('change',e=>{if(e.target.files[0])readImg(e.target.files[0],d=>{S.wall=d;render();});});
+$('#clr-avatar').addEventListener('click',()=>{S.avatar=null;$('#f-avatar').value='';render();});
+$('#clr-wall').addEventListener('click',()=>{S.wall=null;$('#f-wall').value='';render();});
+
+// lock editor (delegated)
+$('#lock-list').addEventListener('input',e=>{
+  const k=e.target.dataset.note, i=+e.target.dataset.i;
+  if(k!=null){S.notes[i][k]=e.target.value; render();}
+});
+$('#lock-list').addEventListener('click',e=>{
+  if(e.target.dataset.delNote!=null){S.notes.splice(+e.target.dataset.delNote,1); renderLockEditor(); render();}
+});
+$('#add-note').addEventListener('click',()=>{S.notes.push({app:'メッセージ',text:'',time:'たった今'}); renderLockEditor(); render();});
+
+// chat editor (delegated)
+$('#chat-list').addEventListener('input',e=>{
+  const k=e.target.dataset.msg, i=+e.target.dataset.i;
+  if(k){S.msgs[i][k]=e.target.value; render();}
+});
+$('#chat-list').addEventListener('change',e=>{
+  const k=e.target.dataset.msg, i=+e.target.dataset.i;
+  if(k==='who'){S.msgs[i].who=e.target.value; render();}
+});
+$('#chat-list').addEventListener('click',e=>{
+  if(e.target.dataset.delMsg!=null){S.msgs.splice(+e.target.dataset.delMsg,1); renderChatEditor(); render();}
+});
+$('#add-msg').addEventListener('click',()=>{S.msgs.push({who:'them',text:''}); renderChatEditor(); render();});
+
+/* ---------- export ---------- */
+$('#save').addEventListener('click',async()=>{
+  const btn=$('#save'); const old=btn.textContent;
+  if(typeof html2canvas==='undefined'){ btn.textContent='保存ライブラリ未読込（再接続して）'; setTimeout(()=>btn.textContent=old,2200); return; }
+  btn.textContent='書き出し中…'; btn.style.pointerEvents='none';
+  try{
+    const node=$('#screen');
+    const canvas=await html2canvas(node,{scale:3, backgroundColor:null, useCORS:true, logging:false});
+    const a=document.createElement('a');
+    a.download=`yasou_${S.mode}_${Date.now()}.png`;
+    a.href=canvas.toDataURL('image/png'); a.click();
+    btn.textContent='保存しました';
+  }catch(err){ btn.textContent='失敗。もう一度試して'; console.error(err); }
+  setTimeout(()=>{btn.textContent=old; btn.style.pointerEvents='';},1800);
+});
+
+/* ---------- GIF export ---------- */
+const GSCALE=1.6;
+const TEMPO_MAP={slow:1.55, normal:1.0, fast:0.62};
+let TEMPO=1.0;
+const D=ms=>Math.max(20,Math.round(ms*TEMPO));
+const easeOut=p=>1-Math.pow(1-p,3);
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+let gifWorkerURL=null;
+async function getWorkerURL(){
+  if(gifWorkerURL) return gifWorkerURL;
+  const res=await fetch('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');
+  const txt=await res.text();
+  gifWorkerURL=URL.createObjectURL(new Blob([txt],{type:'application/javascript'}));
+  return gifWorkerURL;
+}
+function setProg(t){ $('#prog').textContent=t||''; }
+let CAP_SCALE=GSCALE;
+async function snap(){
+  return await html2canvas($('#screen'),{scale:CAP_SCALE,backgroundColor:'#0a0a0c',useCORS:true,logging:false});
+}
+
+async function buildLockFrames(add){
+  render(); const scr=$('#screen'); scr.classList.add('gif-cap');
+  const container=scr.querySelector('.notes');
+  const cards=[...container.querySelectorAll('.ncard')]; // DOM順: 上=新着
+  if(!cards.length){ add(await snap(),D(800)); scr.classList.remove('gif-cap'); return; }
+  const gap=10;
+  const H=cards.map(c=>c.getBoundingClientRect().height);
+  const idx=c=>cards.indexOf(c);
+  container.style.position='relative';
+  container.style.height=(H.reduce((a,b)=>a+b,0)+gap*(cards.length-1))+'px';
+  cards.forEach(c=>{ c.style.position='absolute'; c.style.left='0'; c.style.right='0'; c.style.top='0'; c.style.opacity='0'; c.style.transform='translateY(0px)'; });
+
+  const arrival=[...cards].reverse(); // 古いものが先に届く
+  const yOf=(card,vis)=>{ let y=0; for(const c of vis){ if(c===card) return y; y+=H[idx(c)]+gap; } return y; };
+  const setFrame=(tf,op)=>{ cards.forEach(c=>{ c.style.transform=tf.get(c)||'translateY(0px)'; c.style.opacity=(op.has(c)?op.get(c):0).toFixed(2); }); };
+
+  add(await snap(), D(550));
+  let vis=[]; const K=9;
+  for(let s=0;s<arrival.length;s++){
+    const inc=arrival[s];
+    const newVis=[inc,...vis]; // 新着を一番上に積む
+    for(let f=1;f<=K;f++){
+      const p=easeOut(f/K), tf=new Map(), op=new Map();
+      for(const c of vis){ const y0=yOf(c,vis), y1=yOf(c,newVis); tf.set(c,`translateY(${(y0+(y1-y0)*p).toFixed(2)}px)`); op.set(c,1); }
+      const yi=yOf(inc,newVis);
+      tf.set(inc,`translateY(${(yi-18+18*p).toFixed(2)}px) scale(${(0.94+0.06*p).toFixed(3)})`);
+      op.set(inc, Math.min(1,p*1.3));
+      setFrame(tf,op);
+      add(await snap(), D(30));
+    }
+    const tf=new Map(), op=new Map();
+    for(const c of newVis){ tf.set(c,`translateY(${yOf(c,newVis).toFixed(2)}px)`); op.set(c,1); }
+    setFrame(tf,op);
+    add(await snap(), s===arrival.length-1?D(1100):D(340));
+    vis=newVis;
+  }
+  scr.classList.remove('gif-cap');
+}
+
+async function buildChatFrames(add){
+  render(); const scr=$('#screen'); scr.classList.add('gif-cap');
+  const msgsBox=scr.querySelector('.msgs');
+  const wraps=[...msgsBox.querySelectorAll('.mwrap')];
+  const typingEl=msgsBox.querySelector('.typing');
+  const readmark=msgsBox.querySelector('.readmark');
+  wraps.forEach(w=>w.style.display='none');   // 未出現は場所を取らない
+  if(typingEl) typingEl.style.display='none';
+  if(readmark) readmark.style.opacity='0';
+
+  add(await snap(), D(500));
+  const K=8;
+  for(const w of wraps){
+    const isThem=w.classList.contains('them'); const bub=w.querySelector('.bub');
+    if(isThem && S.typing && typingEl){
+      msgsBox.appendChild(typingEl);           // 出現済みの列の真下へ
+      typingEl.style.display='flex';
+      add(await snap(), D(300)); add(await snap(), D(300)); add(await snap(), D(260));
+      typingEl.style.display='none';
+    }
+    w.style.display='flex'; w.style.opacity='0';
+    for(let f=1;f<=K;f++){
+      const p=easeOut(f/K);
+      w.style.opacity=Math.min(1,p*1.3).toFixed(2);
+      if(bub) bub.style.transform=`translateY(${((1-p)*10).toFixed(2)}px) scale(${(0.9+0.1*p).toFixed(3)})`;
+      add(await snap(), D(30));
+    }
+    w.style.opacity='1'; if(bub) bub.style.transform='none';
+    add(await snap(), D(330));
+  }
+  if(readmark){                                 // 最後に既読がフッと点く
+    add(await snap(), D(260));
+    for(let f=1;f<=6;f++){ readmark.style.opacity=(f/6).toFixed(2); add(await snap(), D(45)); }
+    readmark.style.opacity='1';
+  }
+  add(await snap(), D(1200));
+  scr.classList.remove('gif-cap');
+}
+
+async function buildCallFrames(add){
+  render(); const scr=$('#screen'); scr.classList.add('gif-cap');
+  const glow=scr.querySelector('.glow'); const N=12;
+  for(let i=0;i<N;i++){
+    const t=(Math.sin(i/N*Math.PI*2)+1)/2;
+    if(glow){ glow.style.opacity=(0.14+0.18*t).toFixed(2);
+      glow.style.transform=`translateX(-50%) scale(${(0.9+0.16*t).toFixed(3)})`; }
+    add(await snap(),D(110));
+  }
+  scr.classList.remove('gif-cap');
+}
+
+$('#savegif').addEventListener('click', async ()=>{
+  if(typeof GIF==='undefined'){ setProg('GIFライブラリ未読込（再接続して）'); return; }
+  const btn=$('#savegif'); const old=btn.textContent;
+  btn.style.pointerEvents='none'; btn.textContent='生成中…'; setProg('準備中…');
+  try{
+    const workerURL=await getWorkerURL();
+    const probe=await snap();
+    const gif=new GIF({workers:2, quality:10, workerScript:workerURL,
+      width:probe.width, height:probe.height, background:'#0a0a0c'});
+    let n=0;
+    const add=(canvas,delay)=>{ gif.addFrame(canvas,{delay,copy:true}); n++; setProg(`コマ生成中… ${n}`); };
+    if(S.mode==='lock') await buildLockFrames(add);
+    else if(S.mode==='chat') await buildChatFrames(add);
+    else await buildCallFrames(add);
+    gif.on('progress', p=>setProg(`エンコード中… ${Math.round(p*100)}%`));
+    gif.on('finished', blob=>{
+      const a=document.createElement('a');
+      a.download=`yasou_${S.mode}_${Date.now()}.gif`;
+      a.href=URL.createObjectURL(blob); a.click();
+      setProg('GIFを保存しました'); render();
+      setTimeout(()=>setProg(''),2600);
+    });
+    gif.render();
+  }catch(err){ console.error(err); setProg('失敗。もう一度試して'); render(); }
+  finally{ btn.textContent=old; btn.style.pointerEvents=''; }
+});
+
+$('#f-tempo').addEventListener('change',e=>{ TEMPO=TEMPO_MAP[e.target.value]||1; });
+
+/* ---------- WebM (video) export ---------- */
+async function collectFrames(){
+  const frames=[]; const add=(canvas,delay)=>frames.push({canvas,delay});
+  if(S.mode==='lock') await buildLockFrames(add);
+  else if(S.mode==='chat') await buildChatFrames(add);
+  else await buildCallFrames(add);
+  return frames;
+}
+const VID_TYPES=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4;codecs=h264','video/mp4'];
+$('#savevid').addEventListener('click', async ()=>{
+  if(typeof MediaRecorder==='undefined'){ setProg('この端末は動画書き出し非対応'); return; }
+  let mime=''; try{ mime=VID_TYPES.find(t=>MediaRecorder.isTypeSupported(t))||''; }catch(e){}
+  if(!mime){ setProg('対応する動画形式が見つからない'); return; }
+  const btn=$('#savevid'); const old=btn.textContent; btn.style.pointerEvents='none'; btn.textContent='生成中…';
+  try{
+    CAP_SCALE=1.3;
+    setProg('コマ生成中…');
+    const frames=await collectFrames();
+    if(!frames.length){ setProg('コマがありません'); btn.textContent=old; btn.style.pointerEvents=''; return; }
+    const w=frames[0].canvas.width, h=frames[0].canvas.height;
+    const rc=document.createElement('canvas'); rc.width=w; rc.height=h;
+    const ctx=rc.getContext('2d'); ctx.drawImage(frames[0].canvas,0,0);
+    const stream=rc.captureStream(30);
+    const rec=new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:8000000});
+    const chunks=[]; rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+    const stopped=new Promise(res=>{ rec.onstop=res; });
+    setProg('録画中…'); rec.start();
+    for(const fr of frames){ ctx.drawImage(fr.canvas,0,0); await wait(fr.delay); fr.canvas.width=0; fr.canvas.height=0; fr.canvas=null; }
+    await wait(200);
+    rec.stop(); await stopped;
+    const ext = mime.indexOf('mp4')>=0?'mp4':'webm';
+    const a=document.createElement('a');
+    a.download=`yasou_${S.mode}_${Date.now()}.${ext}`;
+    a.href=URL.createObjectURL(new Blob(chunks,{type:mime})); a.click();
+    setProg(ext.toUpperCase()+'を保存しました'); render();
+    setTimeout(()=>setProg(''),2600);
+  }catch(err){ console.error(err); setProg('失敗。もう一度試して'); render(); }
+  finally{ CAP_SCALE=GSCALE; btn.textContent=old; btn.style.pointerEvents=''; }
+});
+
+/* init */
+renderLockEditor(); renderChatEditor(); render();
+</script>
+</body>
+</html>
